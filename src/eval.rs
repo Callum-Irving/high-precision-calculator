@@ -13,6 +13,7 @@ pub fn eval_atom(atom: &Atom, ctx: &Context) -> CalcResult {
 
 pub fn eval_expr(expr: &Expr, ctx: &Context) -> CalcResult {
     match expr {
+        Expr::AtomExpr(atom) => eval_atom(atom, ctx),
         Expr::UnaryExpr { op, data } => {
             let data = eval_expr(data, ctx)?;
             match op {

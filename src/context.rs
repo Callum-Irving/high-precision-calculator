@@ -39,6 +39,7 @@ impl Context {
     }
 
     pub fn bind_value(&mut self, name: String, value: Number) -> CalcResult {
+        // TODO: Only bind if not already exists
         self.values
             .last_mut()
             .expect("empty context")
@@ -47,6 +48,7 @@ impl Context {
     }
 
     pub fn bind_fn(&mut self, name: String, func: Box<dyn Callable>) -> Result<(), CalcError> {
+        // TODO: Only bind if not already exists
         self.functions
             .last_mut()
             .expect("empty context")
