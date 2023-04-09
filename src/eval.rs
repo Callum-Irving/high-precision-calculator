@@ -28,6 +28,7 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> CalcResult {
                 BinaryOp::Minus => lhs - rhs,
                 BinaryOp::Times => lhs * rhs,
                 BinaryOp::Divide => lhs / rhs,
+                BinaryOp::Power => todo!(),
             })
         }
         Expr::FunctionCall { function, args } => {

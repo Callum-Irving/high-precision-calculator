@@ -1,18 +1,23 @@
-use num::BigRational;
-use num::Complex;
+//use num::BigRational;
+//use num::Complex;
+use rug::Complex;
 
 mod ast;
 mod context;
 mod eval;
+mod parser;
 
-pub type Number = Complex<BigRational>;
+pub type Number = Complex;
 pub type CalcResult = Result<Number, CalcError>;
+// Preicison of floating point numbers
+pub const PREC: u32 = 53;
 
 #[derive(Debug, Clone)]
 pub enum CalcError {
     NameNotFound,
     NameAlreadyBound,
     IncorrectArity,
+    ParseNum,
 }
 
 fn main() {
@@ -21,56 +26,81 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
     use super::ast::*;
     use super::context::Context;
     use super::eval::*;
-    use super::*;
+
+    use rug::Complex;
+
+    fn rug_float(r: f64, i: f64) -> Complex {
+        Complex::with_val(53, (r, i))
+    }
 
     #[test]
     fn test_atom_eval() {
+        let num = rug_float(123f64, 0f64);
+
         let mut ctx = Context::new();
-        let one_two_three: Number = Complex::from_str("123").expect("failed to parse 123");
-        ctx.bind_value("a".to_string(), one_two_three.clone())
+        ctx.bind_value("a".to_string(), num.clone())
             .expect("failed to bind value");
 
         let sym_atom = Atom::Symbol("a".to_string());
         let res = eval_atom(&sym_atom, &ctx).expect("failed to evaluate symbol atom");
-        assert_eq!(one_two_three, res);
+        assert_eq!(num, res);
 
-        let num_atom = Atom::Num(one_two_three.clone());
+        let num_atom = Atom::Num(num.clone());
         let res = eval_atom(&num_atom, &ctx).expect("failed to evaluate number atom");
-        assert_eq!(one_two_three, res);
+        assert_eq!(num, res);
     }
 
     #[test]
     fn test_expr_eval() {
+        // Create complex number 123 + 0i
+        let num = rug_float(123f64, 0f64);
+
+        // Create complex number -123 + 0i
+        let num2 = rug_float(-123f64, 0f64);
+
+        // Create complex number 10 + 0i
+        let num3 = rug_float(10f64, 0f64);
+
+        // Create complex number 20 + 0i
+        let num4 = rug_float(20f64, 0f64);
+
+        // Create complex number 30 + 0i
+        let num5 = rug_float(30f64, 0f64);
+
         let ctx = Context::new();
 
-        let data: Number = Complex::from_str("123").unwrap();
-        let expected: Number = Complex::from_str("-123").unwrap();
         let expr = Expr::UnaryExpr {
             op: UnaryOp::Negate,
-            data: Box::new(Expr::AtomExpr(Atom::Num(data))),
+            data: Box::new(Expr::AtomExpr(Atom::Num(num))),
         };
         let res = eval_expr(&expr, &ctx).unwrap();
-        assert_eq!(res, expected);
+        assert_eq!(res, num2);
 
-        let lhs = Expr::AtomExpr(Atom::Num(Complex::from_str("10").unwrap()));
-        let rhs = Expr::AtomExpr(Atom::Num(Complex::from_str("20").unwrap()));
+        let lhs = Expr::AtomExpr(Atom::Num(num3));
+        let rhs = Expr::AtomExpr(Atom::Num(num4));
         let add_expr = Expr::BinaryExpr {
             lhs: Box::new(lhs),
             rhs: Box::new(rhs),
             op: BinaryOp::Plus,
         };
-        let expected = Complex::from_str("30").unwrap();
         let res = eval_expr(&add_expr, &ctx).unwrap();
-        assert_eq!(res, expected);
+        assert_eq!(res, num5);
     }
 
     #[test]
     fn test_function_call() {
+        // Create complex number 10 + 0i
+        let num1 = rug_float(10f64, 0f64);
+
+        // Create complex number 20 + 0i
+        let num2 = rug_float(20f64, 0f64);
+
+        // Create complex number 30 + 0i
+        let num3 = rug_float(30f64, 0f64);
+
         let mut ctx = Context::new();
 
         let func = CalcFunc::new(
@@ -86,14 +116,13 @@ mod tests {
         let func_call = Expr::FunctionCall {
             function: "f".to_string(),
             args: vec![
-                Expr::AtomExpr(Atom::Num(Complex::from_str("10").unwrap())),
-                Expr::AtomExpr(Atom::Num(Complex::from_str("20").unwrap())),
+                Expr::AtomExpr(Atom::Num(num1)),
+                Expr::AtomExpr(Atom::Num(num2)),
             ],
         };
 
         let res = eval_expr(&func_call, &ctx).unwrap();
-        let expected = Complex::from_str("30").unwrap();
 
-        assert_eq!(res, expected);
+        assert_eq!(res, num3);
     }
 }

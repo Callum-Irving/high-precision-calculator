@@ -61,6 +61,7 @@ pub enum BinaryOp {
     Minus,
     Times,
     Divide,
+    Power,
 }
 
 #[derive(Clone)]
