@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use crate::{CalcError, CalcResult, Callable, Number};
+use crate::ast::Callable;
+use crate::{CalcError, CalcResult, Number};
 
 #[derive(Clone)]
 pub struct Context {

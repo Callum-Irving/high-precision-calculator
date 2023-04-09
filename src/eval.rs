@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
+use crate::ast::{Atom, BinaryOp, Expr, Stmt, UnaryOp};
 use crate::context::Context;
-use crate::{Atom, BinaryOp, Expr, Stmt, UnaryOp};
 use crate::{CalcError, CalcResult, Number};
 
 pub fn eval_atom(atom: &Atom, ctx: &Context) -> CalcResult {
