@@ -21,7 +21,7 @@ impl Clone for Box<dyn Callable> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CalcFunc {
     bindings: Vec<String>,
     body: Expr,
@@ -49,13 +49,13 @@ impl Callable for CalcFunc {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Atom {
     Symbol(String),
     Num(Number),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum BinaryOp {
     Plus,
     Minus,
@@ -64,12 +64,12 @@ pub enum BinaryOp {
     Power,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum UnaryOp {
     Negate,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Expr {
     AtomExpr(Atom),
     UnaryExpr {
@@ -91,7 +91,7 @@ pub enum Expr {
     },
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Stmt {
     Assignment { name: String, value: Expr },
     ExprStmt(Expr),

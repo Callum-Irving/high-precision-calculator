@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use rug::ops::Pow;
+
 use crate::ast::{Atom, BinaryOp, Expr, Stmt, UnaryOp};
 use crate::context::Context;
 use crate::{CalcError, CalcResult, Number};
@@ -28,7 +30,7 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> CalcResult {
                 BinaryOp::Minus => lhs - rhs,
                 BinaryOp::Times => lhs * rhs,
                 BinaryOp::Divide => lhs / rhs,
-                BinaryOp::Power => todo!(),
+                BinaryOp::Power => lhs.pow(rhs),
             })
         }
         Expr::FunctionCall { function, args } => {
