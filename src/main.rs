@@ -1,6 +1,10 @@
+use std::io::{self, Write};
+
 //use num::BigRational;
 //use num::Complex;
 use rug::Complex;
+
+use crate::context::Context;
 
 mod ast;
 mod context;
@@ -18,10 +22,36 @@ pub enum CalcError {
     NameAlreadyBound,
     IncorrectArity,
     ParseNum,
+    ParseError,
+    IOError,
+}
+
+fn read() -> Result<ast::Stmt, CalcError> {
+    print!("calculator> ");
+    io::stdout().flush().map_err(|_| CalcError::IOError)?;
+    let mut buf = String::new();
+    io::stdin()
+        .read_line(&mut buf)
+        .map_err(|_| CalcError::IOError)?;
+    //let buf = buf.trim_end().to_string();
+
+    let (_, stmt) = parser::parse_stmt(&buf).map_err(|_| CalcError::ParseError)?;
+
+    Ok(stmt)
+}
+
+fn eval(stmt: ast::Stmt, ctx: &mut Context) -> CalcResult {
+    eval::eval_stmt(&stmt, ctx)
 }
 
 fn main() {
-    println!("hello, world");
+    let mut ctx = Context::new();
+
+    loop {
+        let input = read().unwrap();
+        let result = eval(input, &mut ctx).unwrap();
+        println!("{}", result);
+    }
 }
 
 #[cfg(test)]

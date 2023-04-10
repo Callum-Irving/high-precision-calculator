@@ -12,6 +12,25 @@ use crate::CalcError;
 use crate::Number;
 use crate::{ast, PREC};
 
+pub fn parse_stmt(input: &str) -> IResult<&str, ast::Stmt> {
+    terminated(
+        alt((
+            map(
+                tuple((
+                    delimited(multispace0, parse_symbol, multispace0),
+                    char('='),
+                    delimited(multispace0, parse_expr, multispace0),
+                )),
+                |(name, _, value)| ast::Stmt::Assignment { name, value },
+            ),
+            map(delimited(multispace0, parse_expr, multispace0), |expr| {
+                ast::Stmt::ExprStmt(expr)
+            }),
+        )),
+        char(';'),
+    )(input)
+}
+
 pub fn parse_expr(input: &str) -> IResult<&str, ast::Expr> {
     let (input, first_term) = parse_term(input)?;
     // I cannot for the life of me figure out why I need to bind this or clone first_term but here we are.
@@ -194,5 +213,10 @@ mod tests {
     #[test]
     fn test_parse_fn_call() {
         let (_rest, _expr) = parse_function_call("g(x,y)").unwrap();
+    }
+
+    #[test]
+    fn test_parse_stmt() {
+        let (_rest, _stmt) = parse_stmt("1 + 2;").unwrap();
     }
 }
