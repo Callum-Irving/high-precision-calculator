@@ -1,5 +1,6 @@
 use std::io::{self, Write};
 
+use eval::CalcValue;
 //use num::BigRational;
 //use num::Complex;
 use rug::Complex;
@@ -14,7 +15,7 @@ mod parser;
 pub type Number = Complex;
 pub type CalcResult = Result<Number, CalcError>;
 // Preicison of floating point numbers
-pub const PREC: u32 = 53;
+pub const PREC: u32 = 128;
 
 #[derive(Debug, Clone)]
 pub enum CalcError {
@@ -40,7 +41,7 @@ fn read() -> Result<ast::Stmt, CalcError> {
     Ok(stmt)
 }
 
-fn eval(stmt: ast::Stmt, ctx: &mut Context) -> CalcResult {
+fn eval(stmt: ast::Stmt, ctx: &mut Context) -> Result<CalcValue, CalcError> {
     eval::eval_stmt(&stmt, ctx)
 }
 

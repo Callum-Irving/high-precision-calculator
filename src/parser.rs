@@ -2,7 +2,7 @@ use nom::branch::alt;
 use nom::bytes::complete::take_while;
 use nom::character::complete::{char, digit1, multispace0, satisfy};
 use nom::combinator::{cut, map, map_res, opt, recognize};
-use nom::multi::{fold_many0, separated_list0};
+use nom::multi::{fold_many0, many0, separated_list0};
 use nom::sequence::{delimited, pair, preceded, terminated, tuple};
 use nom::IResult;
 use rug::Complex;
@@ -15,6 +15,22 @@ use crate::{ast, PREC};
 pub fn parse_stmt(input: &str) -> IResult<&str, ast::Stmt> {
     terminated(
         alt((
+            map(
+                tuple((
+                    preceded(multispace0, parse_symbol),
+                    delimited(
+                        char('('),
+                        separated_list0(
+                            delimited(multispace0, char(','), multispace0),
+                            parse_symbol,
+                        ),
+                        char(')'),
+                    ),
+                    delimited(multispace0, char('='), multispace0),
+                    terminated(parse_expr, multispace0),
+                )),
+                |(name, params, _, body)| ast::Stmt::FuncDef { name, params, body },
+            ),
             map(
                 tuple((
                     delimited(multispace0, parse_symbol, multispace0),
@@ -63,12 +79,12 @@ fn parse_term(input: &str) -> IResult<&str, ast::Expr> {
 fn parse_exponent(input: &str) -> IResult<&str, ast::Expr> {
     let (input, first_base) = parse_parens(input)?;
     let x = fold_many0(
-        tuple((parse_mulop, parse_exponent)),
+        tuple((char('^'), parse_exponent)),
         || first_base.clone(),
-        |base, (op, expt)| ast::Expr::BinaryExpr {
+        |base, (_, expt)| ast::Expr::BinaryExpr {
             lhs: Box::new(base),
             rhs: Box::new(expt),
-            op,
+            op: ast::BinaryOp::Power,
         },
     )(input);
     x
@@ -82,9 +98,24 @@ fn parse_parens(input: &str) -> IResult<&str, ast::Expr> {
             parse_expr,
             terminated(char(')'), multispace0),
         ),
+        parse_blockexpr,
         parse_function_call,
         map(parse_atom, |atom| ast::Expr::AtomExpr(atom)),
     ))(input)
+}
+
+fn parse_blockexpr(input: &str) -> IResult<&str, ast::Expr> {
+    map(
+        delimited(
+            preceded(multispace0, char('{')),
+            tuple((many0(parse_stmt), parse_expr)),
+            terminated(char('}'), multispace0),
+        ),
+        |(stmts, expr)| ast::Expr::BlockExpr {
+            stmts,
+            final_expr: Box::new(expr),
+        },
+    )(input)
 }
 
 fn parse_function_call(input: &str) -> IResult<&str, ast::Expr> {
@@ -167,7 +198,14 @@ fn parse_symbol(input: &str) -> IResult<&str, String> {
 }
 
 fn is_symbol_character(c: char) -> bool {
-    c != '(' && c != ')' && c != '"' && c != ';' && c != ',' && !c.is_whitespace()
+    c != '{'
+        && c != '}'
+        && c != '('
+        && c != ')'
+        && c != '"'
+        && c != ';'
+        && c != ','
+        && !c.is_whitespace()
 }
 
 #[cfg(test)]
@@ -212,11 +250,21 @@ mod tests {
 
     #[test]
     fn test_parse_fn_call() {
-        let (_rest, _expr) = parse_function_call("g(x,y)").unwrap();
+        let (_rest, _expr) = parse_function_call("g(  x , y)").unwrap();
     }
 
     #[test]
     fn test_parse_stmt() {
         let (_rest, _stmt) = parse_stmt("1 + 2;").unwrap();
+    }
+
+    #[test]
+    fn test_parse_block() {
+        let (_rest, _expr) = parse_blockexpr("{3; 4}").unwrap();
+        let (_rest, _other) = parse_blockexpr("{g = 2; 5; 1}").unwrap();
+        let (_, _) = parse_stmt("    g   =    3  ;").unwrap();
+        let (_, e) = parse_expr("{ g    =    3;    g} ").unwrap();
+        println!("{:?}", e);
+        panic!();
     }
 }

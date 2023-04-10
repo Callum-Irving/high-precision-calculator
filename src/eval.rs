@@ -1,10 +1,12 @@
 use std::collections::HashMap;
+use std::fmt::Display;
 
 use rug::ops::Pow;
+use rug::Complex;
 
-use crate::ast::{Atom, BinaryOp, Expr, Stmt, UnaryOp};
+use crate::ast::{Atom, BinaryOp, CalcFunc, Expr, Stmt, UnaryOp};
 use crate::context::Context;
-use crate::{CalcError, CalcResult, Number};
+use crate::{CalcError, CalcResult, Number, PREC};
 
 pub fn eval_atom(atom: &Atom, ctx: &Context) -> CalcResult {
     match atom {
@@ -35,6 +37,7 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> CalcResult {
         }
         Expr::FunctionCall { function, args } => {
             let function = ctx.lookup_fn(function)?;
+            // TODO: check arity
             let args = args
                 .into_iter()
                 .map(|arg| eval_expr(arg, ctx))
@@ -57,12 +60,40 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> CalcResult {
     }
 }
 
-pub fn eval_stmt(stmt: &Stmt, ctx: &mut Context) -> CalcResult {
-    match stmt {
-        Stmt::Assignment { name, value } => {
-            let value = eval_expr(value, ctx)?;
-            ctx.bind_value(name.clone(), value)
+pub enum CalcValue {
+    Ok,
+    Value(Complex),
+}
+
+impl Display for CalcValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CalcValue::Ok => write!(f, "ok"),
+            CalcValue::Value(v) => {
+                if *v.imag() == 0.0 {
+                    write!(f, "{}", v.real())
+                } else if *v.real() == 0.0 {
+                    write!(f, "{}i", v.imag())
+                } else {
+                    write!(f, "{} {} {}i", v.real(), "+", v.imag())
+                }
+            }
         }
-        Stmt::ExprStmt(expr) => eval_expr(expr, ctx),
+    }
+}
+
+pub fn eval_stmt(stmt: &Stmt, ctx: &mut Context) -> Result<CalcValue, CalcError> {
+    match stmt {
+        Stmt::FuncDef { name, params, body } => {
+            let func = CalcFunc::new(params.clone(), body.clone());
+            ctx.bind_fn(name.clone(), Box::new(func))?;
+            Ok(CalcValue::Value(Complex::with_val(PREC, (0_f64, 0_f64))))
+        }
+        Stmt::Assignment { name, value } => {
+            let value = eval_expr(&value, ctx)?;
+            ctx.bind_value(name.clone(), value)
+                .map(|v| CalcValue::Value(v))
+        }
+        Stmt::ExprStmt(expr) => eval_expr(expr, ctx).map(|v| CalcValue::Value(v)),
     }
 }

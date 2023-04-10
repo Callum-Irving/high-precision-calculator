@@ -93,6 +93,14 @@ pub enum Expr {
 
 #[derive(Clone, Debug)]
 pub enum Stmt {
-    Assignment { name: String, value: Expr },
+    FuncDef {
+        name: String,
+        params: Vec<String>,
+        body: Expr,
+    },
+    Assignment {
+        name: String,
+        value: Expr,
+    },
     ExprStmt(Expr),
 }

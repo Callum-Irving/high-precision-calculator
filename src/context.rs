@@ -3,6 +3,26 @@ use std::collections::HashMap;
 use crate::ast::Callable;
 use crate::{CalcError, CalcResult, Number};
 
+// Builtin functions
+#[derive(Clone)]
+struct SqrtFn;
+
+impl Callable for SqrtFn {
+    fn arity(&self) -> usize {
+        1
+    }
+
+    fn call(&self, args: &[Number], _ctx: &Context) -> CalcResult {
+        Ok(args[0].clone().sqrt())
+    }
+}
+
+fn builtins() -> HashMap<String, Box<dyn Callable>> {
+    let map: HashMap<String, Box<dyn Callable>> =
+        HashMap::from([("sqrt".to_string(), Box::new(SqrtFn) as Box<dyn Callable>)]);
+    map
+}
+
 #[derive(Clone)]
 pub struct Context {
     functions: Vec<HashMap<String, Box<dyn Callable>>>,
@@ -12,7 +32,7 @@ pub struct Context {
 impl Context {
     pub fn new() -> Context {
         Context {
-            functions: vec![HashMap::new()],
+            functions: vec![builtins()],
             values: vec![HashMap::new()],
         }
     }
@@ -40,20 +60,30 @@ impl Context {
     }
 
     pub fn bind_value(&mut self, name: String, value: Number) -> CalcResult {
-        // TODO: Only bind if not already exists
-        self.values
-            .last_mut()
+        if self
+            .values
+            .last()
             .expect("empty context")
-            .insert(name, value.clone())
-            .map_or(Ok(value), |_| Err(CalcError::NameAlreadyBound))
+            .contains_key(&name)
+        {
+            Err(CalcError::NameAlreadyBound)
+        } else {
+            self.values.last_mut().unwrap().insert(name, value.clone());
+            Ok(value)
+        }
     }
 
     pub fn bind_fn(&mut self, name: String, func: Box<dyn Callable>) -> Result<(), CalcError> {
-        // TODO: Only bind if not already exists
-        self.functions
-            .last_mut()
+        if self
+            .functions
+            .last()
             .expect("empty context")
-            .insert(name, func)
-            .map_or(Ok(()), |_| Err(CalcError::NameAlreadyBound))
+            .contains_key(&name)
+        {
+            Err(CalcError::NameAlreadyBound)
+        } else {
+            self.functions.last_mut().unwrap().insert(name, func);
+            Ok(())
+        }
     }
 }
