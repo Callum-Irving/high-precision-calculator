@@ -6,12 +6,14 @@ use nom::combinator::{cut, map, opt, recognize};
 use nom::multi::{fold_many0, many0, separated_list0};
 use nom::sequence::{delimited, pair, preceded, terminated, tuple};
 use nom::IResult;
-//use rug::Complex;
-//use rug::Float;
 
 use crate::Number;
 use crate::RM;
 use crate::{ast, PREC};
+
+pub fn parse_stmt_list(input: &str) -> IResult<&str, Vec<ast::Stmt>> {
+    many0(parse_stmt)(input)
+}
 
 pub fn parse_stmt(input: &str) -> IResult<&str, ast::Stmt> {
     terminated(
@@ -109,7 +111,6 @@ fn parse_exponent(input: &str) -> IResult<&str, ast::Expr> {
 }
 
 fn parse_parens(input: &str) -> IResult<&str, ast::Expr> {
-    // Try parentheses delimited expression, otherwise try function call, otherwise try atom.
     alt((
         delimited(
             preceded(multispace0, char('(')),
@@ -192,20 +193,6 @@ fn recognize_number(input: &str) -> IResult<&str, &str> {
 fn parse_number(input: &str) -> IResult<&str, Number> {
     map(recognize_number, |s: &str| {
         BigFloat::parse(s, Radix::Dec, PREC, RM)
-
-        // For parsing complex numbers:
-        //
-        // If last character is 'i', make it imaginary.
-        // Otherwise, make it real.
-        // if s.chars().last().unwrap() == 'i' {
-        //     let l = s.len();
-        //     let sub = s.get(0..l - 1).ok_or(CalcError::ParseNum)?;
-        //     let num = Float::parse(sub).map_err(|_| CalcError::ParseNum)?;
-        //     Ok::<Complex, CalcError>(Complex::with_val(PREC, (0, num)))
-        // } else {
-        //     let num = Float::parse(s).map_err(|_| CalcError::ParseNum)?;
-        //     Ok(Complex::with_val(PREC, (num, 0)))
-        // }
     })(input)
 }
 
@@ -221,15 +208,6 @@ fn parse_symbol(input: &str) -> IResult<&str, String> {
 
 fn is_symbol_character(c: char) -> bool {
     c.is_alphanumeric()
-    //c != '{'
-    //    && c != '}'
-    //    && c != '('
-    //    && c != ')'
-    //    && c != '"'
-    //    && c != ';'
-    //    && c != ','
-    //    && c != '='
-    //    && !c.is_whitespace()
 }
 
 #[cfg(test)]

@@ -1,16 +1,11 @@
-use std::{
-    fmt::Display,
-    io::{self, Write},
-};
+use std::fmt::Display;
 
-use eval::CalcValue;
-//use num::BigRational;
-//use num::Complex;
-//use rug::Complex;
-//use dashu::Decimal;
 use astro_float::{BigFloat, RoundingMode};
+use wasm_bindgen::prelude::*;
 
-use crate::context::Context;
+use context::Context;
+use eval::eval_stmt;
+use parser::parse_stmt_list;
 
 mod ast;
 mod context;
@@ -39,33 +34,60 @@ impl Display for CalcError {
     }
 }
 
-fn read() -> Result<ast::Stmt, CalcError> {
-    print!("calculator> ");
-    io::stdout().flush().map_err(|_| CalcError::IOError)?;
-    let mut buf = String::new();
-    io::stdin()
-        .read_line(&mut buf)
-        .map_err(|_| CalcError::IOError)?;
-    //let buf = buf.trim_end().to_string();
-
-    let (_, stmt) = parser::parse_stmt(&buf).map_err(|_| CalcError::ParseError)?;
-
-    Ok(stmt)
+#[wasm_bindgen]
+pub struct Environment {
+    ctx: Context,
 }
 
-fn eval(stmt: ast::Stmt, ctx: &mut Context) -> Result<CalcValue, CalcError> {
-    eval::eval_stmt(&stmt, ctx)
-}
+impl Environment {
+    pub fn new() -> Environment {
+        Environment {
+            ctx: Context::new(),
+        }
+    }
 
-fn main() {
-    let mut ctx = Context::new();
+    pub fn eval_stmt(&mut self, stmt: String) -> Result<Vec<String>, CalcError> {
+        let (rest, stmts) = parse_stmt_list(&stmt).map_err(|_| CalcError::ParseError)?;
+        if !rest.is_empty() {
+            return Err(CalcError::ParseError);
+        }
 
-    loop {
-        let input = read().unwrap();
-        let result = eval(input, &mut ctx).unwrap();
-        println!("{}", result);
+        let mut vals = Vec::with_capacity(stmts.len());
+        for stmt in stmts {
+            let result = eval_stmt(&stmt, &mut self.ctx)?;
+            vals.push(result.to_string());
+        }
+
+        Ok(vals)
     }
 }
+
+// fn read() -> Result<ast::Stmt, CalcError> {
+//     print!("calculator> ");
+//     io::stdout().flush().map_err(|_| CalcError::IOError)?;
+//     let mut buf = String::new();
+//     io::stdin()
+//         .read_line(&mut buf)
+//         .map_err(|_| CalcError::IOError)?;
+//
+//     let (_, stmt) = parser::parse_stmt(&buf).map_err(|_| CalcError::ParseError)?;
+//
+//     Ok(stmt)
+// }
+//
+// fn eval(stmt: ast::Stmt, ctx: &mut Context) -> Result<CalcValue, CalcError> {
+//     eval::eval_stmt(&stmt, ctx)
+// }
+//
+// fn main() {
+//     let mut ctx = Context::new();
+//
+//     loop {
+//         let input = read().unwrap();
+//         let result = eval(input, &mut ctx).unwrap();
+//         println!("{}", result);
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
@@ -75,8 +97,6 @@ mod tests {
     use super::context::Context;
     use super::eval::*;
 
-    //use rug::Complex;
-    //use dashu::Decimal;
     use astro_float::BigFloat;
 
     #[test]

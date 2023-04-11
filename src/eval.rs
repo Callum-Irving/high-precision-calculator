@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::Display;
 
-//use rug::ops::Pow;
-//use rug::Complex;
-
 use astro_float::Consts;
 
 use crate::ast::{Atom, BinaryOp, CalcFunc, Expr, Stmt, UnaryOp};
