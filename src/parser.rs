@@ -1,3 +1,6 @@
+use std::str::FromStr;
+
+use astro_float::{BigFloat, Radix};
 use nom::branch::alt;
 use nom::bytes::complete::take_while;
 use nom::character::complete::{char, digit1, multispace0, satisfy};
@@ -5,12 +8,12 @@ use nom::combinator::{cut, map, map_res, opt, recognize};
 use nom::multi::{fold_many0, many0, separated_list0};
 use nom::sequence::{delimited, pair, preceded, terminated, tuple};
 use nom::IResult;
-use rug::Complex;
-use rug::Float;
+//use rug::Complex;
+//use rug::Float;
 
-use crate::CalcError;
 use crate::Number;
 use crate::{ast, PREC};
+use crate::{CalcError, RM};
 
 pub fn parse_stmt(input: &str) -> IResult<&str, ast::Stmt> {
     terminated(
@@ -167,23 +170,27 @@ fn recognize_number(input: &str) -> IResult<&str, &str> {
             opt(alt((char('+'), char('-')))),
             cut(digit1),
         ))),
-        opt(char('i')),
+        // opt(char('i')),
     )))(input)
 }
 
 fn parse_number(input: &str) -> IResult<&str, Number> {
-    map_res(recognize_number, |s: &str| {
+    map(recognize_number, |s: &str| {
+        BigFloat::parse(s, Radix::Dec, PREC, RM)
+
+        // For parsing complex numbers:
+        //
         // If last character is 'i', make it imaginary.
         // Otherwise, make it real.
-        if s.chars().last().unwrap() == 'i' {
-            let l = s.len();
-            let sub = s.get(0..l - 1).ok_or(CalcError::ParseNum)?;
-            let num = Float::parse(sub).map_err(|_| CalcError::ParseNum)?;
-            Ok::<Complex, CalcError>(Complex::with_val(PREC, (0, num)))
-        } else {
-            let num = Float::parse(s).map_err(|_| CalcError::ParseNum)?;
-            Ok(Complex::with_val(PREC, (num, 0)))
-        }
+        // if s.chars().last().unwrap() == 'i' {
+        //     let l = s.len();
+        //     let sub = s.get(0..l - 1).ok_or(CalcError::ParseNum)?;
+        //     let num = Float::parse(sub).map_err(|_| CalcError::ParseNum)?;
+        //     Ok::<Complex, CalcError>(Complex::with_val(PREC, (0, num)))
+        // } else {
+        //     let num = Float::parse(s).map_err(|_| CalcError::ParseNum)?;
+        //     Ok(Complex::with_val(PREC, (num, 0)))
+        // }
     })(input)
 }
 
@@ -205,35 +212,34 @@ fn is_symbol_character(c: char) -> bool {
         && c != '"'
         && c != ';'
         && c != ','
+        && c != '='
         && !c.is_whitespace()
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{context::Context, eval, PREC};
+    use crate::{
+        context::Context,
+        eval::{self, eval_expr},
+        PREC,
+    };
 
     use super::*;
 
-    use rug::Complex;
-
-    fn rug_num(r: f64, i: f64) -> Complex {
-        Complex::with_val(PREC, (r, i))
-    }
-
     #[test]
     fn test_parse_number() {
-        recognize_number("123i").unwrap();
+        recognize_number("123").unwrap();
         recognize_number("123").unwrap();
         recognize_number("123.456").unwrap();
         recognize_number("123E10").unwrap();
-        recognize_number("-12.45E-10i").unwrap();
+        recognize_number("-12.45E-10").unwrap();
 
-        let (_rest, num) = parse_number("123i").unwrap();
-        assert_eq!(num, rug_num(0_f64, 123_f64));
+        let (_rest, num) = parse_number("123").unwrap();
+        assert_eq!(num, BigFloat::from_f64(123_f64, PREC));
         let (_rest, num) = parse_number("10e10").unwrap();
-        assert_eq!(num, rug_num(10e10_f64, 0_f64));
-        let (_rest, num) = parse_number("-12.45E-10i").unwrap();
-        assert_eq!(num, rug_num(0_f64, -12.45e-10_f64));
+        assert_eq!(num, BigFloat::from_f64(10e10_f64, PREC));
+        let (_rest, num) = parse_number("-12.45E-10").unwrap();
+        assert_eq!(num, BigFloat::parse("-12.45e-10", Radix::Dec, PREC, RM));
     }
 
     #[test]
@@ -244,7 +250,7 @@ mod tests {
 
         assert_eq!(
             eval::eval_expr(&expr, &ctx).unwrap(),
-            rug_num(123_f64 + 456_f64 + 7_f64, 0_f64)
+            BigFloat::from_f64(123_f64 + 456_f64 + 7_f64, PREC)
         );
     }
 
@@ -263,8 +269,13 @@ mod tests {
         let (_rest, _expr) = parse_blockexpr("{3; 4}").unwrap();
         let (_rest, _other) = parse_blockexpr("{g = 2; 5; 1}").unwrap();
         let (_, _) = parse_stmt("    g   =    3  ;").unwrap();
-        let (_, e) = parse_expr("{ g    =    3;    g} ").unwrap();
-        println!("{:?}", e);
-        panic!();
+        let (_, _) = parse_expr("{ g    =    3;    g} ").unwrap();
+        let (_, expr) = parse_expr("{g=3;g}").unwrap();
+        println!("{:?}", expr);
+        let ctx = Context::new();
+        assert_eq!(
+            eval_expr(&expr, &ctx).unwrap(),
+            BigFloat::from_f64(3_f64, PREC)
+        )
     }
 }

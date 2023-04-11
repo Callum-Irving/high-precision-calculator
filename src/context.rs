@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::ast::Callable;
-use crate::{CalcError, CalcResult, Number};
+use crate::{CalcError, CalcResult, Number, PREC, RM};
 
 // Builtin functions
 #[derive(Clone)]
@@ -13,7 +13,7 @@ impl Callable for SqrtFn {
     }
 
     fn call(&self, args: &[Number], _ctx: &Context) -> CalcResult {
-        Ok(args[0].clone().sqrt())
+        Ok(args[0].clone().sqrt(PREC, RM))
     }
 }
 

@@ -1,9 +1,14 @@
-use std::io::{self, Write};
+use std::{
+    fmt::Display,
+    io::{self, Write},
+};
 
 use eval::CalcValue;
 //use num::BigRational;
 //use num::Complex;
-use rug::Complex;
+//use rug::Complex;
+//use dashu::Decimal;
+use astro_float::{BigFloat, RoundingMode};
 
 use crate::context::Context;
 
@@ -12,10 +17,11 @@ mod context;
 mod eval;
 mod parser;
 
-pub type Number = Complex;
+pub type Number = BigFloat;
 pub type CalcResult = Result<Number, CalcError>;
 // Preicison of floating point numbers
-pub const PREC: u32 = 128;
+pub const PREC: usize = 128;
+pub const RM: RoundingMode = RoundingMode::ToEven;
 
 #[derive(Debug, Clone)]
 pub enum CalcError {
@@ -25,6 +31,12 @@ pub enum CalcError {
     ParseNum,
     ParseError,
     IOError,
+}
+
+impl Display for CalcError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
 }
 
 fn read() -> Result<ast::Stmt, CalcError> {
@@ -57,19 +69,19 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use crate::PREC;
+
     use super::ast::*;
     use super::context::Context;
     use super::eval::*;
 
-    use rug::Complex;
-
-    fn rug_float(r: f64, i: f64) -> Complex {
-        Complex::with_val(53, (r, i))
-    }
+    //use rug::Complex;
+    //use dashu::Decimal;
+    use astro_float::BigFloat;
 
     #[test]
     fn test_atom_eval() {
-        let num = rug_float(123f64, 0f64);
+        let num = BigFloat::from_i32(123, PREC);
 
         let mut ctx = Context::new();
         ctx.bind_value("a".to_string(), num.clone())
@@ -86,20 +98,11 @@ mod tests {
 
     #[test]
     fn test_expr_eval() {
-        // Create complex number 123 + 0i
-        let num = rug_float(123f64, 0f64);
-
-        // Create complex number -123 + 0i
-        let num2 = rug_float(-123f64, 0f64);
-
-        // Create complex number 10 + 0i
-        let num3 = rug_float(10f64, 0f64);
-
-        // Create complex number 20 + 0i
-        let num4 = rug_float(20f64, 0f64);
-
-        // Create complex number 30 + 0i
-        let num5 = rug_float(30f64, 0f64);
+        let num = BigFloat::from_i32(123, PREC);
+        let num2 = BigFloat::from_i32(-123, PREC);
+        let num3 = BigFloat::from_i32(10, PREC);
+        let num4 = BigFloat::from_i32(20, PREC);
+        let num5 = BigFloat::from_i32(30, PREC);
 
         let ctx = Context::new();
 
@@ -123,14 +126,9 @@ mod tests {
 
     #[test]
     fn test_function_call() {
-        // Create complex number 10 + 0i
-        let num1 = rug_float(10f64, 0f64);
-
-        // Create complex number 20 + 0i
-        let num2 = rug_float(20f64, 0f64);
-
-        // Create complex number 30 + 0i
-        let num3 = rug_float(30f64, 0f64);
+        let num1 = BigFloat::from_i32(10, PREC);
+        let num2 = BigFloat::from_i32(20, PREC);
+        let num3 = BigFloat::from_i32(30, PREC);
 
         let mut ctx = Context::new();
 

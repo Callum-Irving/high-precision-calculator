@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 use std::fmt::Display;
 
-use rug::ops::Pow;
-use rug::Complex;
+//use rug::ops::Pow;
+//use rug::Complex;
+
+use astro_float::Consts;
 
 use crate::ast::{Atom, BinaryOp, CalcFunc, Expr, Stmt, UnaryOp};
 use crate::context::Context;
-use crate::{CalcError, CalcResult, Number, PREC};
+use crate::{CalcError, CalcResult, Number, PREC, RM};
 
 pub fn eval_atom(atom: &Atom, ctx: &Context) -> CalcResult {
     match atom {
@@ -28,11 +30,15 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> CalcResult {
             let lhs = eval_expr(lhs, ctx)?;
             let rhs = eval_expr(rhs, ctx)?;
             Ok(match op {
-                BinaryOp::Plus => lhs + rhs,
-                BinaryOp::Minus => lhs - rhs,
-                BinaryOp::Times => lhs * rhs,
-                BinaryOp::Divide => lhs / rhs,
-                BinaryOp::Power => lhs.pow(rhs),
+                BinaryOp::Plus => lhs.add(&rhs, PREC, RM),
+                BinaryOp::Minus => lhs.sub(&rhs, PREC, RM),
+                BinaryOp::Times => lhs.mul(&rhs, PREC, RM),
+                BinaryOp::Divide => lhs.div(&rhs, PREC, RM),
+                BinaryOp::Power => {
+                    // TODO: Don't unwrap
+                    let mut consts = Consts::new().unwrap();
+                    lhs.pow(&rhs, PREC, RM, &mut consts)
+                }
             })
         }
         Expr::FunctionCall { function, args } => {
@@ -62,22 +68,14 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> CalcResult {
 
 pub enum CalcValue {
     Ok,
-    Value(Complex),
+    Value(Number),
 }
 
 impl Display for CalcValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CalcValue::Ok => write!(f, "ok"),
-            CalcValue::Value(v) => {
-                if *v.imag() == 0.0 {
-                    write!(f, "{}", v.real())
-                } else if *v.real() == 0.0 {
-                    write!(f, "{}i", v.imag())
-                } else {
-                    write!(f, "{} {} {}i", v.real(), "+", v.imag())
-                }
-            }
+            CalcValue::Value(v) => write!(f, "{}", v),
         }
     }
 }
@@ -87,7 +85,7 @@ pub fn eval_stmt(stmt: &Stmt, ctx: &mut Context) -> Result<CalcValue, CalcError>
         Stmt::FuncDef { name, params, body } => {
             let func = CalcFunc::new(params.clone(), body.clone());
             ctx.bind_fn(name.clone(), Box::new(func))?;
-            Ok(CalcValue::Value(Complex::with_val(PREC, (0_f64, 0_f64))))
+            Ok(CalcValue::Ok)
         }
         Stmt::Assignment { name, value } => {
             let value = eval_expr(&value, ctx)?;
