@@ -1,10 +1,8 @@
-use std::str::FromStr;
-
 use astro_float::{BigFloat, Radix};
 use nom::branch::alt;
 use nom::bytes::complete::take_while;
 use nom::character::complete::{char, digit1, multispace0, satisfy};
-use nom::combinator::{cut, map, map_res, opt, recognize};
+use nom::combinator::{cut, map, opt, recognize};
 use nom::multi::{fold_many0, many0, separated_list0};
 use nom::sequence::{delimited, pair, preceded, terminated, tuple};
 use nom::IResult;
@@ -12,8 +10,8 @@ use nom::IResult;
 //use rug::Float;
 
 use crate::Number;
+use crate::RM;
 use crate::{ast, PREC};
-use crate::{CalcError, RM};
 
 pub fn parse_stmt(input: &str) -> IResult<&str, ast::Stmt> {
     terminated(
@@ -66,9 +64,9 @@ pub fn parse_expr(input: &str) -> IResult<&str, ast::Expr> {
 }
 
 fn parse_term(input: &str) -> IResult<&str, ast::Expr> {
-    let (input, first_factor) = parse_exponent(input)?;
+    let (input, first_factor) = parse_unary_expr(input)?;
     let x = fold_many0(
-        tuple((parse_mulop, parse_exponent)),
+        tuple((parse_mulop, parse_unary_expr)),
         || first_factor.clone(),
         |acc, (op, factor)| ast::Expr::BinaryExpr {
             lhs: Box::new(acc),
@@ -77,6 +75,23 @@ fn parse_term(input: &str) -> IResult<&str, ast::Expr> {
         },
     )(input);
     x
+}
+
+fn parse_unary_expr(input: &str) -> IResult<&str, ast::Expr> {
+    alt((
+        map(
+            tuple((parse_unop, preceded(multispace0, parse_expr))),
+            |(op, expr)| ast::Expr::UnaryExpr {
+                op,
+                data: Box::new(expr),
+            },
+        ),
+        parse_exponent,
+    ))(input)
+}
+
+fn parse_unop(input: &str) -> IResult<&str, ast::UnaryOp> {
+    map(char('-'), |_| ast::UnaryOp::Negate)(input)
 }
 
 fn parse_exponent(input: &str) -> IResult<&str, ast::Expr> {
@@ -205,15 +220,16 @@ fn parse_symbol(input: &str) -> IResult<&str, String> {
 }
 
 fn is_symbol_character(c: char) -> bool {
-    c != '{'
-        && c != '}'
-        && c != '('
-        && c != ')'
-        && c != '"'
-        && c != ';'
-        && c != ','
-        && c != '='
-        && !c.is_whitespace()
+    c.is_alphanumeric()
+    //c != '{'
+    //    && c != '}'
+    //    && c != '('
+    //    && c != ')'
+    //    && c != '"'
+    //    && c != ';'
+    //    && c != ','
+    //    && c != '='
+    //    && !c.is_whitespace()
 }
 
 #[cfg(test)]
