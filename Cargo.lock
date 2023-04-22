@@ -43,6 +43,7 @@ dependencies = [
  "astro-float",
  "dyn-clone",
  "nom",
+ "serde",
 ]
 
 [[package]]
