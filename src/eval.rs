@@ -45,6 +45,11 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> CalcResult {
                 .into_iter()
                 .map(|arg| eval_expr(arg, ctx))
                 .collect::<Result<Vec<Number>, CalcError>>()?;
+
+            if function.arity() != args.len() {
+                return Err(CalcError::IncorrectArity(function.arity(), args.len()));
+            }
+
             function.call(&args, ctx)
         }
         Expr::BlockExpr { stmts, final_expr } => {

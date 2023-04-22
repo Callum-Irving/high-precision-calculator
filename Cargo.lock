@@ -4,9 +4,9 @@ version = 3
 
 [[package]]
 name = "astro-float"
-version = "0.6.7"
+version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "501dfd692cb4527613a7f98e38575f9c8712dab05804d60a6e88da9f01805c0d"
+checksum = "d36a32546d5becb1fe9cec5d924b3f77a793db6ff557c34a6d45f42152defd9b"
 dependencies = [
  "astro-float-macro",
  "astro-float-num",
@@ -14,9 +14,9 @@ dependencies = [
 
 [[package]]
 name = "astro-float-macro"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ac13e23375a78ae5b30ffca36a6b14abcb8d37187877951fe16b4dac85d989b"
+checksum = "4d436e7886804626fc602bc45139ac3a8984e58da6dfd9e2472f85aa78aa7151"
 dependencies = [
  "astro-float-num",
  "proc-macro2",
@@ -26,15 +26,14 @@ dependencies = [
 
 [[package]]
 name = "astro-float-num"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c859de7bcb56b7ca7092dad251db070efe813a627613700bbe91c5ec5996528"
+checksum = "b399a9bcb45d8f0fbaffb3d7a8fd27af4c52a6be93ab2218b133d7a857109b39"
 dependencies = [
  "itertools",
  "lazy_static",
  "rand",
  "serde",
- "smallvec",
 ]
 
 [[package]]
@@ -99,9 +98,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.141"
+version = "0.2.142"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3304a64d199bb964be99741b7a14d26972741915b3649639149b2479bb46f4b5"
+checksum = "6a987beff54b60ffa6d51982e1aa1146bc42f19bd26be28b0586f252fccf5317"
 
 [[package]]
 name = "log"
@@ -196,15 +195,9 @@ dependencies = [
 
 [[package]]
 name = "serde"
-version = "1.0.159"
+version = "1.0.160"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c04e8343c3daeec41f58990b9d77068df31209f2af111e059e9fe9646693065"
-
-[[package]]
-name = "smallvec"
-version = "1.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a507befe795404456341dfab10cef66ead4c041f62b8b11bbb92bffe5d0953e0"
+checksum = "bb2f3770c8bce3bcda7e149193a069a0f4365bda1fa5cd88e03bca26afc1216c"
 
 [[package]]
 name = "syn"

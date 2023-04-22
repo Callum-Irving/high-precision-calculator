@@ -47,7 +47,7 @@ impl Context {
             .rev()
             .find(|map| map.contains_key(name))
             .and_then(|map| map.get(name).cloned())
-            .ok_or(CalcError::NameNotFound)
+            .ok_or(CalcError::NameNotFound(name.to_owned()))
     }
 
     pub fn lookup_fn(&self, name: &str) -> Result<&Box<dyn Callable>, CalcError> {
@@ -56,7 +56,7 @@ impl Context {
             .rev()
             .find(|map| map.contains_key(name))
             .and_then(|map| map.get(name))
-            .ok_or(CalcError::NameNotFound)
+            .ok_or(CalcError::NameNotFound(name.to_owned()))
     }
 
     pub fn bind_value(&mut self, name: String, value: Number) -> CalcResult {
@@ -66,7 +66,7 @@ impl Context {
             .expect("empty context")
             .contains_key(&name)
         {
-            Err(CalcError::NameAlreadyBound)
+            Err(CalcError::NameAlreadyBound(name))
         } else {
             self.values.last_mut().unwrap().insert(name, value.clone());
             Ok(value)
@@ -80,7 +80,7 @@ impl Context {
             .expect("empty context")
             .contains_key(&name)
         {
-            Err(CalcError::NameAlreadyBound)
+            Err(CalcError::NameAlreadyBound(name))
         } else {
             self.functions.last_mut().unwrap().insert(name, func);
             Ok(())

@@ -1,10 +1,12 @@
 use std::fmt::Display;
 
 use astro_float::{BigFloat, RoundingMode};
-use wasm_bindgen::prelude::*;
+
+use std::io;
+use std::io::Write;
 
 use context::Context;
-use eval::eval_stmt;
+use eval::{eval_stmt, CalcValue};
 use parser::parse_stmt_list;
 
 mod ast;
@@ -20,21 +22,34 @@ pub const RM: RoundingMode = RoundingMode::ToEven;
 
 #[derive(Debug, Clone)]
 pub enum CalcError {
-    NameNotFound,
-    NameAlreadyBound,
-    IncorrectArity,
+    NameNotFound(String),
+    NameAlreadyBound(String),
+
+    /// Expected, found
+    IncorrectArity(usize, usize),
+
     ParseNum,
     ParseError,
     IOError,
 }
 
 impl Display for CalcError {
-    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CalcError::NameNotFound(name) => write!(f, "ERROR: Name not found: \"{}\"", name),
+            CalcError::NameAlreadyBound(name) => {
+                write!(f, "ERROR: Name already bound: \"{}\"", name)
+            }
+            CalcError::IncorrectArity(expected, found) => {
+                write!(f, "ERROR: Expected {} arguments, found {}", expected, found)
+            }
+            CalcError::ParseError => write!(f, "ERROR: Parsing error"),
+            CalcError::IOError => write!(f, "ERROR: IO error"),
+            CalcError::ParseNum => write!(f, "ERROR: Number parsing error"),
+        }
     }
 }
 
-#[wasm_bindgen]
 pub struct Environment {
     ctx: Context,
 }
@@ -46,7 +61,7 @@ impl Environment {
         }
     }
 
-    pub fn eval_stmt(&mut self, stmt: String) -> Result<Vec<String>, CalcError> {
+    pub fn eval_stmt_lst(&mut self, stmt: String) -> Result<Vec<String>, CalcError> {
         let (rest, stmts) = parse_stmt_list(&stmt).map_err(|_| CalcError::ParseError)?;
         if !rest.is_empty() {
             return Err(CalcError::ParseError);
@@ -62,32 +77,41 @@ impl Environment {
     }
 }
 
-// fn read() -> Result<ast::Stmt, CalcError> {
-//     print!("calculator> ");
-//     io::stdout().flush().map_err(|_| CalcError::IOError)?;
-//     let mut buf = String::new();
-//     io::stdin()
-//         .read_line(&mut buf)
-//         .map_err(|_| CalcError::IOError)?;
-//
-//     let (_, stmt) = parser::parse_stmt(&buf).map_err(|_| CalcError::ParseError)?;
-//
-//     Ok(stmt)
-// }
-//
-// fn eval(stmt: ast::Stmt, ctx: &mut Context) -> Result<CalcValue, CalcError> {
-//     eval::eval_stmt(&stmt, ctx)
-// }
-//
-// fn main() {
-//     let mut ctx = Context::new();
-//
-//     loop {
-//         let input = read().unwrap();
-//         let result = eval(input, &mut ctx).unwrap();
-//         println!("{}", result);
-//     }
-// }
+fn read() -> Result<ast::Stmt, CalcError> {
+    print!("calculator> ");
+    io::stdout().flush().map_err(|_| CalcError::IOError)?;
+    let mut buf = String::new();
+    io::stdin()
+        .read_line(&mut buf)
+        .map_err(|_| CalcError::IOError)?;
+    let (_, stmt) = parser::parse_stmt(&buf).map_err(|_| CalcError::ParseError)?;
+    Ok(stmt)
+}
+
+fn eval(stmt: ast::Stmt, ctx: &mut Context) -> Result<CalcValue, CalcError> {
+    eval::eval_stmt(&stmt, ctx)
+}
+
+fn main() {
+    let mut ctx = Context::new();
+    loop {
+        let input = match read() {
+            Ok(stmt) => stmt,
+            Err(e) => {
+                println!("{}", e);
+                continue;
+            }
+        };
+        let result = match eval(input, &mut ctx) {
+            Ok(val) => val,
+            Err(e) => {
+                println!("{}", e);
+                continue;
+            }
+        };
+        println!("{}", result);
+    }
+}
 
 #[cfg(test)]
 mod tests {
