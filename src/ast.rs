@@ -2,20 +2,21 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::iter::zip;
 
+use serde::Serialize;
+
 use crate::context::Context;
 use crate::eval::eval_expr;
 use crate::{CalcError, CalcResult, Number};
 
-#[derive(Clone)]
-pub enum CalcFunc {
-    Builtin(BuiltinFunc),
-    UserDef(UserFunc),
+pub enum CalcFuncRef<'a> {
+    Builtin(&'a BuiltinFunc),
+    UserDef(&'a UserFunc),
 }
 
-impl CalcFunc {
+impl<'a> CalcFuncRef<'a> {
     pub fn call(&self, args: &[Number], ctx: &Context) -> CalcResult {
         match self {
-            CalcFunc::Builtin(func) => {
+            CalcFuncRef::Builtin(func) => {
                 // First, check arity
                 if func.arity != args.len() {
                     return Err(CalcError::IncorrectArity(func.arity, args.len()));
@@ -24,7 +25,7 @@ impl CalcFunc {
                 // Call function
                 func.apply(args, ctx)
             }
-            CalcFunc::UserDef(func) => {
+            CalcFuncRef::UserDef(func) => {
                 // Check arity
                 if func.arity() != args.len() {
                     return Err(CalcError::IncorrectArity(func.arity(), args.len()));
@@ -35,6 +36,36 @@ impl CalcFunc {
         }
     }
 }
+
+#[derive(Clone)]
+pub enum CalcFunc {
+    Builtin(BuiltinFunc),
+    UserDef(UserFunc),
+}
+
+// impl CalcFunc {
+//     pub fn call(&self, args: &[Number], ctx: &Context) -> CalcResult {
+//         match self {
+//             CalcFunc::Builtin(func) => {
+//                 // First, check arity
+//                 if func.arity != args.len() {
+//                     return Err(CalcError::IncorrectArity(func.arity, args.len()));
+//                 }
+//
+//                 // Call function
+//                 func.apply(args, ctx)
+//             }
+//             CalcFunc::UserDef(func) => {
+//                 // Check arity
+//                 if func.arity() != args.len() {
+//                     return Err(CalcError::IncorrectArity(func.arity(), args.len()));
+//                 }
+//
+//                 func.apply(args, ctx)
+//             }
+//         }
+//     }
+// }
 
 #[derive(Clone)]
 pub struct BuiltinFunc {
@@ -60,7 +91,7 @@ impl Debug for BuiltinFunc {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct UserFunc {
     bindings: Vec<String>,
     body: Expr,
@@ -87,13 +118,13 @@ impl UserFunc {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Atom {
     Symbol(String),
     Num(Number),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum BinaryOp {
     Plus,
     Minus,
@@ -102,12 +133,12 @@ pub enum BinaryOp {
     Power,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum UnaryOp {
     Negate,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Expr {
     AtomExpr(Atom),
     UnaryExpr {
@@ -129,7 +160,7 @@ pub enum Expr {
     },
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum Stmt {
     FuncDef {
         name: String,

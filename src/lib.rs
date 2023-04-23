@@ -117,8 +117,7 @@ mod tests {
                 op: BinaryOp::Plus,
             },
         );
-        ctx.bind_fn("f".to_string(), CalcFunc::UserDef(func))
-            .unwrap();
+        ctx.bind_fn("f".to_string(), func).unwrap();
 
         let func_call = Expr::FunctionCall {
             function: "f".to_string(),

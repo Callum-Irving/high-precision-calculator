@@ -3,7 +3,7 @@ use std::fmt::Display;
 
 use astro_float::Consts;
 
-use crate::ast::{Atom, BinaryOp, CalcFunc, Expr, Stmt, UnaryOp, UserFunc};
+use crate::ast::{Atom, BinaryOp, Expr, Stmt, UnaryOp, UserFunc};
 use crate::context::Context;
 use crate::{CalcError, CalcResult, Number, PREC, RM};
 
@@ -81,7 +81,7 @@ pub fn eval_stmt(stmt: &Stmt, ctx: &mut Context) -> Result<CalcValue, CalcError>
     match stmt {
         Stmt::FuncDef { name, params, body } => {
             let func = UserFunc::new(params.clone(), body.clone());
-            ctx.bind_fn(name.clone(), CalcFunc::UserDef(func))?;
+            ctx.bind_fn(name.clone(), func)?;
             Ok(CalcValue::Ok)
         }
         Stmt::Assignment { name, value } => {
