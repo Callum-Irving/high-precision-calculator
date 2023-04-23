@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::iter::zip;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::context::Context;
 use crate::eval::eval_expr;
@@ -91,7 +91,7 @@ impl Debug for BuiltinFunc {
     }
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UserFunc {
     bindings: Vec<String>,
     body: Expr,
@@ -118,13 +118,13 @@ impl UserFunc {
     }
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Atom {
     Symbol(String),
     Num(Number),
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum BinaryOp {
     Plus,
     Minus,
@@ -133,12 +133,12 @@ pub enum BinaryOp {
     Power,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum UnaryOp {
     Negate,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Expr {
     AtomExpr(Atom),
     UnaryExpr {
@@ -160,7 +160,7 @@ pub enum Expr {
     },
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Stmt {
     FuncDef {
         name: String,

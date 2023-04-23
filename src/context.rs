@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use astro_float::BigFloat;
 use lazy_static::lazy_static;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::ast::{BuiltinFunc, CalcFuncRef, UserFunc};
 use crate::{CalcError, CalcResult, Number, PREC, RM};
@@ -74,7 +74,7 @@ lazy_static! {
     };
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Context {
     functions: Vec<HashMap<String, UserFunc>>,
     values: Vec<HashMap<String, Number>>,
@@ -142,21 +142,5 @@ impl Context {
             self.functions.last_mut().unwrap().insert(name, func);
             Ok(())
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::{PREC, RM};
-    use astro_float::BigFloat;
-
-    #[test]
-    fn test_log() {
-        let ten = BigFloat::from_f64(10_f64, PREC);
-        let hundred = BigFloat::from_f64(100_f64, PREC);
-        let mut consts = astro_float::Consts::new().unwrap();
-        let res = hundred.log(&ten, PREC, RM, &mut consts);
-        println!("{}", res);
-        panic!();
     }
 }
