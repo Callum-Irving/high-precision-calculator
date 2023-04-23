@@ -148,19 +148,27 @@ fn parse_function_call(input: &str) -> IResult<&str, ast::Expr> {
 }
 
 fn parse_addop(input: &str) -> IResult<&str, ast::BinaryOp> {
-    map(alt((char('+'), char('-'))), |c: char| match c {
-        '+' => ast::BinaryOp::Plus,
-        '-' => ast::BinaryOp::Minus,
-        _ => unreachable!(),
-    })(input)
+    delimited(
+        multispace0,
+        map(alt((char('+'), char('-'))), |c: char| match c {
+            '+' => ast::BinaryOp::Plus,
+            '-' => ast::BinaryOp::Minus,
+            _ => unreachable!(),
+        }),
+        multispace0,
+    )(input)
 }
 
 fn parse_mulop(input: &str) -> IResult<&str, ast::BinaryOp> {
-    map(alt((char('*'), char('/'))), |c: char| match c {
-        '*' => ast::BinaryOp::Times,
-        '/' => ast::BinaryOp::Divide,
-        _ => unreachable!(),
-    })(input)
+    delimited(
+        multispace0,
+        map(alt((char('*'), char('/'))), |c: char| match c {
+            '*' => ast::BinaryOp::Times,
+            '/' => ast::BinaryOp::Divide,
+            _ => unreachable!(),
+        }),
+        multispace0,
+    )(input)
 }
 
 fn parse_atom(input: &str) -> IResult<&str, ast::Atom> {
@@ -210,67 +218,75 @@ fn is_symbol_character(c: char) -> bool {
     c.is_alphanumeric()
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::{
-//         context::Context,
-//         eval::{self, eval_expr},
-//         PREC,
-//     };
-//
-//     use super::*;
-//
-//     #[test]
-//     fn test_parse_number() {
-//         recognize_number("123").unwrap();
-//         recognize_number("123").unwrap();
-//         recognize_number("123.456").unwrap();
-//         recognize_number("123E10").unwrap();
-//         recognize_number("-12.45E-10").unwrap();
-//
-//         let (_rest, num) = parse_number("123").unwrap();
-//         assert_eq!(num, BigFloat::from_f64(123_f64, PREC));
-//         let (_rest, num) = parse_number("10e10").unwrap();
-//         assert_eq!(num, BigFloat::from_f64(10e10_f64, PREC));
-//         let (_rest, num) = parse_number("-12.45E-10").unwrap();
-//         assert_eq!(num, BigFloat::parse("-12.45e-10", Radix::Dec, PREC, RM));
-//     }
-//
-//     #[test]
-//     fn test_parse_expr() {
-//         let (_rest, expr) = parse_expr("123 + 456 + 7").unwrap();
-//
-//         let ctx = Context::new();
-//
-//         assert_eq!(
-//             eval::eval_expr(&expr, &ctx).unwrap(),
-//             BigFloat::from_f64(123_f64 + 456_f64 + 7_f64, PREC)
-//         );
-//     }
-//
-//     #[test]
-//     fn test_parse_fn_call() {
-//         let (_rest, _expr) = parse_function_call("g(  x , y)").unwrap();
-//     }
-//
-//     #[test]
-//     fn test_parse_stmt() {
-//         let (_rest, _stmt) = parse_stmt("1 + 2;").unwrap();
-//     }
-//
-//     #[test]
-//     fn test_parse_block() {
-//         let (_rest, _expr) = parse_blockexpr("{3; 4}").unwrap();
-//         let (_rest, _other) = parse_blockexpr("{g = 2; 5; 1}").unwrap();
-//         let (_, _) = parse_stmt("    g   =    3  ;").unwrap();
-//         let (_, _) = parse_expr("{ g    =    3;    g} ").unwrap();
-//         let (_, expr) = parse_expr("{g=3;g}").unwrap();
-//         println!("{:?}", expr);
-//         let ctx = Context::new();
-//         assert_eq!(
-//             eval_expr(&expr, &ctx).unwrap(),
-//             BigFloat::from_f64(3_f64, PREC)
-//         )
-//     }
-// }
-//
+#[cfg(test)]
+mod tests {
+    use crate::{
+        context::Context,
+        eval::{self, eval_expr},
+        PREC,
+    };
+
+    use super::*;
+
+    #[test]
+    fn test_parse_number() {
+        recognize_number("123").unwrap();
+        recognize_number("123").unwrap();
+        recognize_number("123.456").unwrap();
+        recognize_number("123E10").unwrap();
+        recognize_number("-12.45E-10").unwrap();
+
+        let (_rest, num) = parse_number("123").unwrap();
+        assert_eq!(num, BigFloat::from_f64(123_f64, PREC));
+        let (_rest, num) = parse_number("10e10").unwrap();
+        assert_eq!(num, BigFloat::from_f64(10e10_f64, PREC));
+        let (_rest, num) = parse_number("-12.45E-10").unwrap();
+        assert_eq!(num, BigFloat::parse("-12.45e-10", Radix::Dec, PREC, RM));
+    }
+
+    #[test]
+    fn test_parse_expr() {
+        let (_rest, expr) = parse_expr("123 + 456 + 7").unwrap();
+
+        let ctx = Context::new();
+
+        assert_eq!(
+            eval::eval_expr(&expr, &ctx).unwrap(),
+            BigFloat::from_f64(123_f64 + 456_f64 + 7_f64, PREC)
+        );
+
+        let (_rest, expr) = parse_expr("sqrt(1) + 3").unwrap();
+        println!("{:?}", expr);
+    }
+
+    #[test]
+    fn test_parse_fn_call() {
+        let (_rest, _expr) = parse_function_call("g(  x , y)").unwrap();
+    }
+
+    #[test]
+    fn test_parse_stmt() {
+        let (_rest, _stmt) = parse_stmt("sqrt(1) + 2 * 3;").unwrap();
+    }
+
+    #[test]
+    fn test_parse_block() {
+        let (_rest, _expr) = parse_blockexpr("{3; 4}").unwrap();
+        let (_rest, _other) = parse_blockexpr("{g = 2; 5; 1}").unwrap();
+        let (_, _) = parse_stmt("    g   =    3  ;").unwrap();
+        let (_, _) = parse_expr("{ g    =    3;    g} ").unwrap();
+        let (_, expr) = parse_expr("{g=3;g}").unwrap();
+        println!("{:?}", expr);
+        let ctx = Context::new();
+        assert_eq!(
+            eval_expr(&expr, &ctx).unwrap(),
+            BigFloat::from_f64(3_f64, PREC)
+        )
+    }
+
+    #[test]
+    fn test_parse_fn_def() {
+        let (_rest, _def) = parse_stmt("f(x) = x + 1;").unwrap();
+        let (_rest, _def) = parse_stmt("f(x) = sqrt(x) + 1;").unwrap();
+    }
+}

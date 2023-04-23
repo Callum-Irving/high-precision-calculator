@@ -109,7 +109,7 @@ mod tests {
 
         let mut ctx = Context::new();
 
-        let func = CalcFunc::new(
+        let func = UserFunc::new(
             vec!["x".to_string(), "y".to_string()],
             Expr::BinaryExpr {
                 lhs: Box::new(Expr::AtomExpr(Atom::Symbol("x".to_string()))),
@@ -117,7 +117,8 @@ mod tests {
                 op: BinaryOp::Plus,
             },
         );
-        ctx.bind_fn("f".to_string(), Box::new(func)).unwrap();
+        ctx.bind_fn("f".to_string(), CalcFunc::UserDef(func))
+            .unwrap();
 
         let func_call = Expr::FunctionCall {
             function: "f".to_string(),

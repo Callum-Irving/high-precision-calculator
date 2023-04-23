@@ -12,9 +12,14 @@ fn read() -> Result<ast::Stmt, CalcError> {
     io::stdin()
         .read_line(&mut buf)
         .map_err(|_| CalcError::IOError)?;
+
+    if buf.trim() == "exit" {
+        std::process::exit(0);
+    }
+
     let (rest, stmt) = parser::parse_stmt(&buf).map_err(|_| CalcError::ParseError)?;
 
-    if !rest.is_empty() {
+    if !rest.trim().is_empty() {
         Err(CalcError::ParseError)
     } else {
         Ok(stmt)

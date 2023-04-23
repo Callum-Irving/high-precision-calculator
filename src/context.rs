@@ -1,38 +1,61 @@
 use std::collections::HashMap;
 
-use crate::ast::Callable;
+use lazy_static::lazy_static;
+
+use crate::ast::{BuiltinFunc, CalcFunc};
 use crate::{CalcError, CalcResult, Number, PREC, RM};
 
-// Builtin functions
-#[derive(Clone)]
-struct SqrtFn;
+lazy_static! {
+    pub static ref BUILTINS: HashMap<String, CalcFunc> = {
+        let mut m = HashMap::new();
 
-impl Callable for SqrtFn {
-    fn arity(&self) -> usize {
-        1
-    }
+        // Square root function
+        m.insert(
+            "sqrt".to_string(),
+            CalcFunc::Builtin(BuiltinFunc::new(1, |args, _ctx| {
+                Ok(args[0].clone().sqrt(PREC, RM))
+            })),
+        );
 
-    fn call(&self, args: &[Number], _ctx: &Context) -> CalcResult {
-        Ok(args[0].clone().sqrt(PREC, RM))
-    }
-}
+        // Trig functions
+        m.insert(
+            "sin".to_string(),
+            CalcFunc::Builtin(BuiltinFunc::new(1, |args, _ctx| {
+                let mut consts = astro_float::Consts::new().unwrap();
+                Ok(args[0].clone().sin(PREC, RM, &mut consts))
+            }))
+        );
 
-fn builtins() -> HashMap<String, Box<dyn Callable>> {
-    let map: HashMap<String, Box<dyn Callable>> =
-        HashMap::from([("sqrt".to_string(), Box::new(SqrtFn) as Box<dyn Callable>)]);
-    map
+        m.insert(
+            "cos".to_string(),
+            CalcFunc::Builtin(BuiltinFunc::new(1, |args, _ctx| {
+                let mut consts = astro_float::Consts::new().unwrap();
+                Ok(args[0].clone().cos(PREC, RM, &mut consts))
+            }))
+        );
+
+        m.insert(
+            "tan".to_string(),
+            CalcFunc::Builtin(BuiltinFunc::new(1, |args, _ctx| {
+               let mut consts = astro_float::Consts::new().unwrap();
+                Ok(args[0].clone().tan(PREC, RM, &mut consts))
+            }))
+        );
+
+        m
+    };
 }
 
 #[derive(Clone)]
 pub struct Context {
-    functions: Vec<HashMap<String, Box<dyn Callable>>>,
+    functions: Vec<HashMap<String, CalcFunc>>,
     values: Vec<HashMap<String, Number>>,
 }
 
 impl Context {
     pub fn new() -> Context {
         Context {
-            functions: vec![builtins()],
+            functions: vec![HashMap::new()],
             values: vec![HashMap::new()],
         }
     }
@@ -50,36 +73,30 @@ impl Context {
             .ok_or(CalcError::NameNotFound(name.to_owned()))
     }
 
-    pub fn lookup_fn(&self, name: &str) -> Result<&Box<dyn Callable>, CalcError> {
-        self.functions
+    pub fn lookup_fn(&self, name: &str) -> Result<&CalcFunc, CalcError> {
+        if let Some(func) = self
+            .functions
             .iter()
             .rev()
-            .find(|map| map.contains_key(name))
-            .and_then(|map| map.get(name))
-            .ok_or(CalcError::NameNotFound(name.to_owned()))
-    }
-
-    pub fn bind_value(&mut self, name: String, value: Number) -> CalcResult {
-        if self
-            .values
-            .last()
-            .expect("empty context")
-            .contains_key(&name)
+            .find(|s| s.contains_key(name))
+            .and_then(|s| s.get(name))
         {
-            Err(CalcError::NameAlreadyBound(name))
+            Ok(func)
+        } else if let Some(func) = BUILTINS.get(name) {
+            Ok(func)
         } else {
-            self.values.last_mut().unwrap().insert(name, value.clone());
-            Ok(value)
+            Err(CalcError::NameNotFound(name.to_owned()))
         }
     }
 
-    pub fn bind_fn(&mut self, name: String, func: Box<dyn Callable>) -> Result<(), CalcError> {
-        if self
-            .functions
-            .last()
-            .expect("empty context")
-            .contains_key(&name)
-        {
+    pub fn bind_value(&mut self, name: String, value: Number) -> CalcResult {
+        self.values.last_mut().unwrap().insert(name, value.clone());
+        Ok(value)
+    }
+
+    pub fn bind_fn(&mut self, name: String, func: CalcFunc) -> Result<(), CalcError> {
+        // Make sure you don't overwrite a builtin
+        if BUILTINS.contains_key(&name) {
             Err(CalcError::NameAlreadyBound(name))
         } else {
             self.functions.last_mut().unwrap().insert(name, func);

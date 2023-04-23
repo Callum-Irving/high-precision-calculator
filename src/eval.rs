@@ -3,7 +3,7 @@ use std::fmt::Display;
 
 use astro_float::Consts;
 
-use crate::ast::{Atom, BinaryOp, CalcFunc, Expr, Stmt, UnaryOp};
+use crate::ast::{Atom, BinaryOp, CalcFunc, Expr, Stmt, UnaryOp, UserFunc};
 use crate::context::Context;
 use crate::{CalcError, CalcResult, Number, PREC, RM};
 
@@ -40,15 +40,10 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> CalcResult {
         }
         Expr::FunctionCall { function, args } => {
             let function = ctx.lookup_fn(function)?;
-            // TODO: check arity
             let args = args
                 .into_iter()
                 .map(|arg| eval_expr(arg, ctx))
                 .collect::<Result<Vec<Number>, CalcError>>()?;
-
-            if function.arity() != args.len() {
-                return Err(CalcError::IncorrectArity(function.arity(), args.len()));
-            }
 
             function.call(&args, ctx)
         }
@@ -85,8 +80,8 @@ impl Display for CalcValue {
 pub fn eval_stmt(stmt: &Stmt, ctx: &mut Context) -> Result<CalcValue, CalcError> {
     match stmt {
         Stmt::FuncDef { name, params, body } => {
-            let func = CalcFunc::new(params.clone(), body.clone());
-            ctx.bind_fn(name.clone(), Box::new(func))?;
+            let func = UserFunc::new(params.clone(), body.clone());
+            ctx.bind_fn(name.clone(), CalcFunc::UserDef(func))?;
             Ok(CalcValue::Ok)
         }
         Stmt::Assignment { name, value } => {

@@ -1,51 +1,89 @@
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::iter::zip;
-
-use dyn_clone::DynClone;
 
 use crate::context::Context;
 use crate::eval::eval_expr;
-use crate::{CalcResult, Number};
+use crate::{CalcError, CalcResult, Number};
 
-pub trait Callable: DynClone {
-    /// Returns the number of parameters a function has.
-    fn arity(&self) -> usize;
-
-    /// Call the function on some arguments.
-    fn call(&self, args: &[Number], ctx: &Context) -> CalcResult;
+#[derive(Clone)]
+pub enum CalcFunc {
+    Builtin(BuiltinFunc),
+    UserDef(UserFunc),
 }
 
-impl Clone for Box<dyn Callable> {
-    fn clone(&self) -> Self {
-        dyn_clone::clone_box(&**self)
+impl CalcFunc {
+    pub fn call(&self, args: &[Number], ctx: &Context) -> CalcResult {
+        match self {
+            CalcFunc::Builtin(func) => {
+                // First, check arity
+                if func.arity != args.len() {
+                    return Err(CalcError::IncorrectArity(func.arity, args.len()));
+                }
+
+                // Call function
+                func.apply(args, ctx)
+            }
+            CalcFunc::UserDef(func) => {
+                // Check arity
+                if func.arity() != args.len() {
+                    return Err(CalcError::IncorrectArity(func.arity(), args.len()));
+                }
+
+                func.apply(args, ctx)
+            }
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct BuiltinFunc {
+    pub arity: usize,
+
+    // TODO: Probably doesn't need context.
+    apply: fn(&[Number], &Context) -> CalcResult,
+}
+
+impl BuiltinFunc {
+    pub fn new(arity: usize, apply: fn(&[Number], &Context) -> CalcResult) -> BuiltinFunc {
+        BuiltinFunc { arity, apply }
+    }
+
+    pub fn apply(&self, args: &[Number], ctx: &Context) -> CalcResult {
+        (self.apply)(args, ctx)
+    }
+}
+
+impl Debug for BuiltinFunc {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "builtin function")
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct CalcFunc {
+pub struct UserFunc {
     bindings: Vec<String>,
     body: Expr,
 }
 
-impl CalcFunc {
-    pub fn new(bindings: Vec<String>, body: Expr) -> CalcFunc {
-        CalcFunc { bindings, body }
-    }
-}
-
-impl Callable for CalcFunc {
-    fn arity(&self) -> usize {
-        self.bindings.len()
+impl UserFunc {
+    pub fn new(bindings: Vec<String>, body: Expr) -> UserFunc {
+        UserFunc { bindings, body }
     }
 
-    fn call(&self, args: &[Number], ctx: &Context) -> CalcResult {
+    pub fn apply(&self, args: &[Number], ctx: &Context) -> CalcResult {
         // Create evaluation scope
         let mut eval_scope = ctx.clone();
         let bindings = HashMap::from_iter(zip(self.bindings.iter().cloned(), args.iter().cloned()));
         eval_scope.add_scope(bindings);
 
-        // Eval body in new scope
+        // Evaluate function body in new scope
         eval_expr(&self.body, &eval_scope)
+    }
+
+    /// Return the number of arguments the function takes.
+    pub fn arity(&self) -> usize {
+        self.bindings.len()
     }
 }
 
