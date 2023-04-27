@@ -16,38 +16,32 @@ pub fn parse_stmt_list(input: &str) -> IResult<&str, Vec<ast::Stmt>> {
 }
 
 pub fn parse_stmt(input: &str) -> IResult<&str, ast::Stmt> {
-    terminated(
-        alt((
-            map(
-                tuple((
-                    preceded(multispace0, parse_symbol),
-                    delimited(
-                        char('('),
-                        separated_list0(
-                            delimited(multispace0, char(','), multispace0),
-                            parse_symbol,
-                        ),
-                        char(')'),
-                    ),
-                    delimited(multispace0, char('='), multispace0),
-                    terminated(parse_expr, multispace0),
-                )),
-                |(name, params, _, body)| ast::Stmt::FuncDef { name, params, body },
-            ),
-            map(
-                tuple((
-                    delimited(multispace0, parse_symbol, multispace0),
-                    char('='),
-                    delimited(multispace0, parse_expr, multispace0),
-                )),
-                |(name, _, value)| ast::Stmt::Assignment { name, value },
-            ),
-            map(delimited(multispace0, parse_expr, multispace0), |expr| {
-                ast::Stmt::ExprStmt(expr)
-            }),
-        )),
-        char(';'),
-    )(input)
+    alt((
+        map(
+            tuple((
+                preceded(multispace0, parse_symbol),
+                delimited(
+                    char('('),
+                    separated_list0(delimited(multispace0, char(','), multispace0), parse_symbol),
+                    char(')'),
+                ),
+                delimited(multispace0, char('='), multispace0),
+                terminated(parse_expr, multispace0),
+            )),
+            |(name, params, _, body)| ast::Stmt::FuncDef { name, params, body },
+        ),
+        map(
+            tuple((
+                delimited(multispace0, parse_symbol, multispace0),
+                char('='),
+                delimited(multispace0, parse_expr, multispace0),
+            )),
+            |(name, _, value)| ast::Stmt::Assignment { name, value },
+        ),
+        map(delimited(multispace0, parse_expr, multispace0), |expr| {
+            ast::Stmt::ExprStmt(expr)
+        }),
+    ))(input)
 }
 
 pub fn parse_expr(input: &str) -> IResult<&str, ast::Expr> {

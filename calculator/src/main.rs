@@ -40,13 +40,9 @@ fn main() {
                 continue;
             }
         };
-        let result = match eval(input, &mut ctx) {
-            Ok(val) => val,
-            Err(e) => {
-                println!("{}", e);
-                continue;
-            }
+        match eval(input, &mut ctx) {
+            Ok(val) => println!("{}", val),
+            Err(e) => println!("{}", e),
         };
-        println!("{}", result);
     }
 }

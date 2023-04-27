@@ -4,6 +4,7 @@
 use calculator::context::Context;
 use calculator::eval::eval_stmt;
 use calculator::parser::parse_stmt;
+use calculator::CalcError;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -18,7 +19,15 @@ fn create_context() -> Context {
 
 #[tauri::command]
 fn tauri_eval_stmt(stmt: &str, mut ctx: Context) -> (String, Context) {
-    let (_, stmt) = parse_stmt(stmt).unwrap();
+    let (rest, stmt) = match parse_stmt(stmt) {
+        Ok((rest, stmt)) => (rest, stmt),
+        Err(_) => return (CalcError::ParseError.to_string(), ctx),
+    };
+
+    if !rest.is_empty() {
+        return (CalcError::ParseError.to_string(), ctx);
+    }
+
     let res = eval_stmt(&stmt, &mut ctx);
     match res {
         Ok(res) => (res.to_string(), ctx),
