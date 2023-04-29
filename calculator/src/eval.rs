@@ -1,11 +1,10 @@
-use std::collections::HashMap;
 use std::fmt::Display;
 
 use astro_float::Consts;
 
 use crate::ast::{Atom, BinaryOp, Expr, Stmt, UnaryOp, UserFunc};
 use crate::context::Context;
-use crate::float_to_string;
+use crate::formatting::float_to_string;
 use crate::{CalcError, CalcResult, Number, PREC, RM};
 
 pub fn eval_atom(atom: &Atom, ctx: &Context) -> CalcResult {
