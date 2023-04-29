@@ -12,7 +12,7 @@ pub type Number = BigFloat;
 pub type CalcResult = Result<Number, CalcError>;
 // Preicison of floating point numbers
 pub const PREC: usize = 128;
-pub const BASE_10_PREC: usize = 15; // log(2^PREC)
+pub const BASE_10_PREC: usize = 38; // log(2^PREC)
 pub const RM: RoundingMode = RoundingMode::ToEven;
 
 #[derive(Debug, Clone)]
