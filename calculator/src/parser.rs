@@ -111,25 +111,25 @@ fn parse_parens(input: &str) -> IResult<&str, ast::Expr> {
             parse_expr,
             terminated(char(')'), multispace0),
         ),
-        parse_blockexpr,
+        //parse_blockexpr,
         parse_function_call,
         map(parse_atom, |atom| ast::Expr::AtomExpr(atom)),
     ))(input)
 }
 
-fn parse_blockexpr(input: &str) -> IResult<&str, ast::Expr> {
-    map(
-        delimited(
-            preceded(multispace0, char('{')),
-            tuple((many0(parse_stmt), parse_expr)),
-            terminated(char('}'), multispace0),
-        ),
-        |(stmts, expr)| ast::Expr::BlockExpr {
-            stmts,
-            final_expr: Box::new(expr),
-        },
-    )(input)
-}
+// fn parse_blockexpr(input: &str) -> IResult<&str, ast::Expr> {
+//     map(
+//         delimited(
+//             preceded(multispace0, char('{')),
+//             tuple((many0(parse_stmt), parse_expr)),
+//             terminated(char('}'), multispace0),
+//         ),
+//         |(stmts, expr)| ast::Expr::BlockExpr {
+//             stmts,
+//             final_expr: Box::new(expr),
+//         },
+//     )(input)
+// }
 
 fn parse_function_call(input: &str) -> IResult<&str, ast::Expr> {
     map(
@@ -214,11 +214,7 @@ fn is_symbol_character(c: char) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        context::Context,
-        eval::{self, eval_expr},
-        PREC,
-    };
+    use crate::{context::Context, eval, PREC};
 
     use super::*;
 
@@ -263,20 +259,20 @@ mod tests {
         let (_rest, _stmt) = parse_stmt("sqrt(1) + 2 * 3;").unwrap();
     }
 
-    #[test]
-    fn test_parse_block() {
-        let (_rest, _expr) = parse_blockexpr("{3; 4}").unwrap();
-        let (_rest, _other) = parse_blockexpr("{g = 2; 5; 1}").unwrap();
-        let (_, _) = parse_stmt("    g   =    3  ;").unwrap();
-        let (_, _) = parse_expr("{ g    =    3;    g} ").unwrap();
-        let (_, expr) = parse_expr("{g=3;g}").unwrap();
-        println!("{:?}", expr);
-        let ctx = Context::new();
-        assert_eq!(
-            eval_expr(&expr, &ctx).unwrap(),
-            BigFloat::from_f64(3_f64, PREC)
-        )
-    }
+    // #[test]
+    // fn test_parse_block() {
+    //     let (_rest, _expr) = parse_blockexpr("{3; 4}").unwrap();
+    //     let (_rest, _other) = parse_blockexpr("{g = 2; 5; 1}").unwrap();
+    //     let (_, _) = parse_stmt("    g   =    3  ;").unwrap();
+    //     let (_, _) = parse_expr("{ g    =    3;    g} ").unwrap();
+    //     let (_, expr) = parse_expr("{g=3;g}").unwrap();
+    //     println!("{:?}", expr);
+    //     let ctx = Context::new();
+    //     assert_eq!(
+    //         eval_expr(&expr, &ctx).unwrap(),
+    //         BigFloat::from_f64(3_f64, PREC)
+    //     )
+    // }
 
     #[test]
     fn test_parse_fn_def() {

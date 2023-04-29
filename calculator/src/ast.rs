@@ -154,10 +154,10 @@ pub enum Expr {
         function: String,
         args: Vec<Expr>,
     },
-    BlockExpr {
-        stmts: Vec<Stmt>,
-        final_expr: Box<Expr>,
-    },
+    // BlockExpr {
+    //     stmts: Vec<Stmt>,
+    //     final_expr: Box<Expr>,
+    // },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

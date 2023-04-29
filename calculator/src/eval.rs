@@ -5,6 +5,7 @@ use astro_float::Consts;
 
 use crate::ast::{Atom, BinaryOp, Expr, Stmt, UnaryOp, UserFunc};
 use crate::context::Context;
+use crate::float_to_string;
 use crate::{CalcError, CalcResult, Number, PREC, RM};
 
 pub fn eval_atom(atom: &Atom, ctx: &Context) -> CalcResult {
@@ -46,20 +47,19 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> CalcResult {
                 .collect::<Result<Vec<Number>, CalcError>>()?;
 
             function.call(&args, ctx)
-        }
-        Expr::BlockExpr { stmts, final_expr } => {
-            // Create new scope
-            let mut eval_scope = ctx.clone();
-            eval_scope.add_scope(HashMap::new());
+        } // Expr::BlockExpr { stmts, final_expr } => {
+          //     // Create new scope
+          //     let mut eval_scope = ctx.clone();
+          //     eval_scope.add_scope(HashMap::new());
 
-            // Evaulate stmts in new scope
-            for stmt in stmts {
-                eval_stmt(stmt, &mut eval_scope)?;
-            }
+          //     // Evaulate stmts in new scope
+          //     for stmt in stmts {
+          //         eval_stmt(stmt, &mut eval_scope)?;
+          //     }
 
-            // Evaluate expr in new scope
-            eval_expr(final_expr, &eval_scope)
-        }
+          //     // Evaluate expr in new scope
+          //     eval_expr(final_expr, &eval_scope)
+          // }
     }
 }
 
@@ -72,7 +72,7 @@ impl Display for CalcValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CalcValue::Ok => write!(f, "ok"),
-            CalcValue::Value(v) => write!(f, "{}", v),
+            CalcValue::Value(v) => write!(f, "{}", float_to_string(v)),
         }
     }
 }
