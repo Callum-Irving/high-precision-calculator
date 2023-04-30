@@ -1,9 +1,9 @@
 use astro_float::{BigFloat, Radix};
 use nom::branch::alt;
 use nom::bytes::complete::take_while;
-use nom::character::complete::{char, digit1, multispace0, satisfy};
+use nom::character::complete::{char, digit1, satisfy};
 use nom::combinator::{cut, map, opt, recognize};
-use nom::multi::{fold_many0, many0, separated_list0};
+use nom::multi::{fold_many0, many0, many1, separated_list0};
 use nom::sequence::{delimited, pair, preceded, terminated, tuple};
 use nom::IResult;
 
@@ -12,33 +12,41 @@ use crate::RM;
 use crate::{ast, PREC};
 
 pub fn parse_stmt_list(input: &str) -> IResult<&str, Vec<ast::Stmt>> {
-    many0(parse_stmt)(input)
+    separated_list0(newline1, parse_stmt)(input)
+}
+
+fn newline1(input: &str) -> IResult<&str, &str> {
+    recognize(many1(char('\n')))(input)
+}
+
+fn whitespace0(input: &str) -> IResult<&str, &str> {
+    recognize(many0(alt((char(' '), char('\t')))))(input)
 }
 
 pub fn parse_stmt(input: &str) -> IResult<&str, ast::Stmt> {
     alt((
         map(
             tuple((
-                preceded(multispace0, parse_symbol),
+                preceded(whitespace0, parse_symbol),
                 delimited(
                     char('('),
-                    separated_list0(delimited(multispace0, char(','), multispace0), parse_symbol),
+                    separated_list0(delimited(whitespace0, char(','), whitespace0), parse_symbol),
                     char(')'),
                 ),
-                delimited(multispace0, char('='), multispace0),
-                terminated(parse_expr, multispace0),
+                delimited(whitespace0, char('='), whitespace0),
+                terminated(parse_expr, whitespace0),
             )),
             |(name, params, _, body)| ast::Stmt::FuncDef { name, params, body },
         ),
         map(
             tuple((
-                delimited(multispace0, parse_symbol, multispace0),
+                delimited(whitespace0, parse_symbol, whitespace0),
                 char('='),
-                delimited(multispace0, parse_expr, multispace0),
+                delimited(whitespace0, parse_expr, whitespace0),
             )),
             |(name, _, value)| ast::Stmt::Assignment { name, value },
         ),
-        map(delimited(multispace0, parse_expr, multispace0), |expr| {
+        map(delimited(whitespace0, parse_expr, whitespace0), |expr| {
             ast::Stmt::ExprStmt(expr)
         }),
     ))(input)
@@ -76,7 +84,7 @@ fn parse_term(input: &str) -> IResult<&str, ast::Expr> {
 fn parse_unary_expr(input: &str) -> IResult<&str, ast::Expr> {
     alt((
         map(
-            tuple((parse_unop, preceded(multispace0, parse_expr))),
+            tuple((parse_unop, preceded(whitespace0, parse_expr))),
             |(op, expr)| ast::Expr::UnaryExpr {
                 op,
                 data: Box::new(expr),
@@ -107,9 +115,9 @@ fn parse_exponent(input: &str) -> IResult<&str, ast::Expr> {
 fn parse_parens(input: &str) -> IResult<&str, ast::Expr> {
     alt((
         delimited(
-            preceded(multispace0, char('(')),
+            preceded(whitespace0, char('(')),
             parse_expr,
-            terminated(char(')'), multispace0),
+            terminated(char(')'), whitespace0),
         ),
         //parse_blockexpr,
         parse_function_call,
@@ -120,9 +128,9 @@ fn parse_parens(input: &str) -> IResult<&str, ast::Expr> {
 // fn parse_blockexpr(input: &str) -> IResult<&str, ast::Expr> {
 //     map(
 //         delimited(
-//             preceded(multispace0, char('{')),
+//             preceded(whitespace0, char('{')),
 //             tuple((many0(parse_stmt), parse_expr)),
-//             terminated(char('}'), multispace0),
+//             terminated(char('}'), whitespace0),
 //         ),
 //         |(stmts, expr)| ast::Expr::BlockExpr {
 //             stmts,
@@ -143,36 +151,36 @@ fn parse_function_call(input: &str) -> IResult<&str, ast::Expr> {
 
 fn parse_addop(input: &str) -> IResult<&str, ast::BinaryOp> {
     delimited(
-        multispace0,
+        whitespace0,
         map(alt((char('+'), char('-'))), |c: char| match c {
             '+' => ast::BinaryOp::Plus,
             '-' => ast::BinaryOp::Minus,
             _ => unreachable!(),
         }),
-        multispace0,
+        whitespace0,
     )(input)
 }
 
 fn parse_mulop(input: &str) -> IResult<&str, ast::BinaryOp> {
     delimited(
-        multispace0,
+        whitespace0,
         map(alt((char('*'), char('/'))), |c: char| match c {
             '*' => ast::BinaryOp::Times,
             '/' => ast::BinaryOp::Divide,
             _ => unreachable!(),
         }),
-        multispace0,
+        whitespace0,
     )(input)
 }
 
 fn parse_atom(input: &str) -> IResult<&str, ast::Atom> {
     delimited(
-        multispace0,
+        whitespace0,
         alt((
             map(parse_number, |num| ast::Atom::Num(num)),
             map(parse_symbol, |sym| ast::Atom::Symbol(sym)),
         )),
-        multispace0,
+        whitespace0,
     )(input)
 }
 
@@ -278,5 +286,12 @@ mod tests {
     fn test_parse_fn_def() {
         let (_rest, _def) = parse_stmt("f(x) = x + 1;").unwrap();
         let (_rest, _def) = parse_stmt("f(x) = sqrt(x) + 1;").unwrap();
+    }
+
+    #[test]
+    fn test_parse_stmt_list() {
+        let (rest, stmts) = parse_stmt_list("x=5\n1+2").unwrap();
+        assert_eq!(stmts.len(), 2);
+        assert!(rest.is_empty());
     }
 }
