@@ -127,7 +127,12 @@ fn format_num(sign: astro_float::Sign, mantissa: &[u8], mut expt: i32) -> String
         // Normal format
         let mut bytes = Vec::new();
 
-        // First expt plus one digits
+        // First, sign
+        if sign == Sign::Neg {
+            bytes.push(b'-');
+        }
+
+        // Expt plus one digits
         if expt >= mantissa.len() as i32 {
             // TODO: Preallocate vector
 
