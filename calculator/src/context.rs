@@ -42,7 +42,12 @@ lazy_static! {
             "sin".to_string(),
             BuiltinFunc::new(1, |args, _ctx| {
                 let mut consts = astro_float::Consts::new().unwrap();
-                Ok(args[0].clone().sin(PREC, RM, &mut consts))
+                if args[0] == consts.pi(PREC, RM) {
+                    // return 0
+                    Ok(BigFloat::from_f32(0.0, PREC))
+                } else {
+                    Ok(args[0].clone().sin(PREC, RM, &mut consts))
+                }
             })
         );
 
