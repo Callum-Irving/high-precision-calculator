@@ -2,8 +2,6 @@
   import { invoke } from "@tauri-apps/api/tauri";
 
   let ctx;
-  let stmt = "";
-  let result = "";
 
   let cells = [{
     stmt: "",
@@ -14,7 +12,7 @@
     ctx = await invoke("create_context");
   }
 
-  async function evalStmt(stmt) {
+  async function evalStmt(stmt: string) {
     let rust_ret = await invoke("tauri_eval_stmt", { stmt, ctx});
     ctx = rust_ret[1];
 
@@ -32,7 +30,7 @@
   {#await initContext()}
     <p>Initializing context...</p>
   {:then}
-    {#each cells as cell, index}
+    {#each cells as cell}
       <div class="row">
         <input bind:value={cell.stmt} />
         <button on:click={async () => cell.result = await evalStmt(cell.stmt)}>

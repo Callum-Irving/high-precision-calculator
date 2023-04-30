@@ -13,11 +13,10 @@ fn round_to_digit(
     let mut mantissa = VecDeque::from(mantissa);
 
     // Find index of first non-zero digit in mantissa
-    let i = mantissa
-        .iter()
-        .enumerate()
-        .find(|&(_, &digit)| digit != 0)?
-        .0;
+    let i = match mantissa.iter().enumerate().find(|&(_, &digit)| digit != 0) {
+        Some((i, _)) => i,
+        None => return Some((exponent, Vec::from(mantissa))),
+    };
 
     // Get digit precision digits after i
     // TODO: Check this algorithm
@@ -72,6 +71,12 @@ fn add1_to_vec(mut digits: VecDeque<u8>) -> Option<VecDeque<u8>> {
 fn format_num(sign: astro_float::Sign, mantissa: &[u8], mut expt: i32) -> String {
     // Remove trailing zeros
     let mut mantissa = Vec::from(mantissa);
+
+    // Handle 0 case
+    if mantissa.is_empty() {
+        return "0".to_string();
+    }
+
     while *mantissa.last().unwrap() == 0 {
         mantissa.pop();
     }
