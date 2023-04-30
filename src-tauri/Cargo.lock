@@ -218,17 +218,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "calculator"
-version = "0.1.0"
-dependencies = [
- "astro-float",
- "dyn-clone",
- "lazy_static",
- "nom",
- "serde",
-]
-
-[[package]]
 name = "cargo_toml"
 version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -568,12 +557,6 @@ name = "dunce"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56ce8c6da7551ec6c462cbaf3bfbc75131ebbfa1c944aeaa9dab51ca1c5f0c3b"
-
-[[package]]
-name = "dyn-clone"
-version = "1.0.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68b0cf012f1230e43cd00ebb729c6bb58707ecfa8ad08b52ef3a4ccd2697fc30"
 
 [[package]]
 name = "either"
@@ -1096,7 +1079,7 @@ checksum = "fed44880c466736ef9a5c5b5facefb5ed0785676d0c02d612db14e54f0d84286"
 name = "high-precision-calculator"
 version = "0.0.0"
 dependencies = [
- "calculator",
+ "precise-calc",
  "serde",
  "serde_json",
  "tauri",
@@ -1847,6 +1830,18 @@ name = "ppv-lite86"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
+
+[[package]]
+name = "precise-calc"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dca09d1216f8651527c6b74a86b06f757e2b2445f2d5ad72b10e532cf77ddc32"
+dependencies = [
+ "astro-float",
+ "lazy_static",
+ "nom",
+ "serde",
+]
 
 [[package]]
 name = "precomputed-hash"

@@ -1,11 +1,11 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use calculator::context::Context;
-use calculator::eval::eval_stmt;
-use calculator::parser::parse_stmt;
-use calculator::parser::parse_stmt_list;
-use calculator::CalcError;
+use precise_calc::context::Context;
+use precise_calc::eval::eval_stmt;
+use precise_calc::parser::parse_stmt;
+use precise_calc::parser::parse_stmt_list;
+use precise_calc::CalcError;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
